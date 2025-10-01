@@ -1,5 +1,7 @@
 import React from "react";
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import {
   Chart as ChartJS,
@@ -10,11 +12,42 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import type { ChartOptions } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
+// ✅ Chart.js setup
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-export default function App() {
+// ✅ Variants for animation
+const sectionVariant: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
+};
+
+// ✅ Animated Section Wrapper
+interface AnimatedSectionProps {
+  children: ReactNode;
+}
+const AnimatedSection: React.FC<AnimatedSectionProps> = ({ children }) => {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
+
+  return (
+    <motion.section
+      ref={ref}
+      className="w-full max-w-4xl bg-white shadow-lg rounded-2xl p-6 space-y-4"
+      variants={sectionVariant}
+      initial="hidden"
+      animate={inView ? "visible" : "hidden"}
+    >
+      {children}
+    </motion.section>
+  );
+};
+
+// ✅ Chart Section
+const ChartSection: React.FC = () => {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+
   const data = {
     labels: ["Development", "Testing", "Integration"],
     datasets: [
@@ -27,7 +60,7 @@ export default function App() {
     ],
   };
 
-  const options = {
+  const options:ChartOptions<"bar"> = {
     responsive: true,
     animation: {
       duration: 1200,
@@ -44,80 +77,62 @@ export default function App() {
     },
   };
 
-  const sectionVariant = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-  };
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={inView ? { opacity: 1, scale: 1 } : {}}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      {inView && <Bar data={data} options={options} />}
+    </motion.div>
+  );
+};
 
-  const AnimatedSection = ({ children }) => {
-    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
-    return (
-      <motion.section
-        ref={ref}
-        className="w-full max-w-4xl bg-white shadow-lg rounded-2xl p-6 space-y-4"
-        variants={sectionVariant}
-        initial="hidden"
-        animate={inView ? "visible" : "hidden"}
-      >
-        {children}
-      </motion.section>
-    );
-  };
+// ✅ Timeline Section
+const TimelineSection: React.FC = () => {
+  const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
 
-  const ChartSection = () => {
-    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
-    return (
+  const milestones: string[] = [
+    "Week 1: Requirements gathering & dashboard design",
+    "Weeks 2-3: Dashboard development (frontend + backend)",
+    "Week 4: Integration with internal authentication server",
+    "Week 5: Testing & bug fixing",
+    "Week 6: Final deployment within intranet",
+  ];
+
+  return (
+    <div className="relative pl-10" ref={ref}>
+      {/* Progress Line */}
       <motion.div
-        ref={ref}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={inView ? { opacity: 1, scale: 1 } : {}}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        {inView && <Bar data={data} options={options} />}
-      </motion.div>
-    );
-  };
+        className="absolute left-3 ml-1.5 mt-1 top-0 w-1 bg-blue-200 rounded-full"
+        style={{ height: `${milestones.length * 19}%`, transformOrigin: "top" }}
+        initial={{ scaleY: 0 }}
+        animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+      />
 
-  const TimelineSection = () => {
-    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.2 });
-    const milestones = [
-      "Week 1: Requirements gathering & dashboard design",
-      "Weeks 2-3: Dashboard development (frontend + backend)",
-      "Week 4: Integration with internal authentication server",
-      "Week 5: Testing & bug fixing",
-      "Week 6: Final deployment within intranet",
-    ];
+      <ol className="list-none space-y-6">
+        {milestones.map((item, index) => (
+          <motion.li
+            key={index}
+            className="relative flex items-start"
+            initial={{ opacity: 0, x: -20 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.3 }}
+          >
+            {/* Progress Dot */}
+            <span className="absolute -left-7 w-4 h-4 bg-blue-500 rounded-full shadow" />
+            <span className="text-gray-700">{item}</span>
+          </motion.li>
+        ))}
+      </ol>
+    </div>
+  );
+};
 
-    return (
-      <div className="relative pl-10" ref={ref}>
-        {/* Progress Line */}
-        <motion.div
-          className="absolute left-3 ml-1.5 mt-1 top-0 w-1 bg-blue-200 rounded-full"
-          style={{ height: `${milestones.length * 2.9}rem`, transformOrigin: "top" }}
-          initial={{ scaleY: 0 }}
-          animate={inView ? { scaleY: 1 } : { scaleY: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-
-        <ol className="list-none space-y-6">
-          {milestones.map((item, index) => (
-            <motion.li
-              key={index}
-              className="relative flex items-start"
-              initial={{ opacity: 0, x: -20 }}
-              animate={inView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.3 }}
-            >
-              {/* Progress Dot */}
-              <span className="absolute -left-7 w-4 h-4 bg-blue-500 rounded-full shadow" />
-              <span className="text-gray-700">{item}</span>
-            </motion.li>
-          ))}
-        </ol>
-      </div>
-    );
-  };
-
+// ✅ Main App
+const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-6 space-y-8">
       <motion.h1
@@ -152,7 +167,7 @@ export default function App() {
         </ul>
       </AnimatedSection>
 
-      {/* Estimate Section with Animated Chart */}
+      {/* Estimate Section */}
       <AnimatedSection>
         <h2 className="text-2xl font-semibold">Man-Hour Estimate</h2>
         <ChartSection />
@@ -184,7 +199,7 @@ export default function App() {
         </table>
       </AnimatedSection>
 
-      {/* Timeline Section with Step-by-Step Progress */}
+      {/* Timeline Section */}
       <AnimatedSection>
         <h2 className="text-2xl font-semibold">Timeline</h2>
         <TimelineSection />
@@ -204,4 +219,6 @@ export default function App() {
       </AnimatedSection>
     </div>
   );
-}
+};
+
+export default App;
